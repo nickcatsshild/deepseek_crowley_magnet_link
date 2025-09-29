@@ -1,0 +1,5 @@
+# Lista de sites para busca
+# Coloque um site por linha
+# Exemplo:
+https://redetorrent.com
+https://www.starckfilmes.fans
