@@ -26,13 +26,22 @@ logging.basicConfig(
 # ==============================================================================
 # CRAWLER PROFISSIONAL - VERSÃO UNIFICADA
 #
-# Este script combina as melhores funcionalidades dos crawlers anteriores:
-# - Gerenciamento de múltiplos sites a partir de um arquivo (base_busca.txt)
-# - Histórico persistente para evitar links duplicados
-# - Motor de varredura multi-thread para escanear sites profundamente
-# - Respeito ao `robots.txt` para um rastreamento ético
-# - Categorização de links encontrados
-# - Velocidade e comportamento configuráveis
+# FUNCIONALIDADES PRINCIPAIS:
+#
+# 1.  **Busca em Múltiplos Sites**: Lê uma lista de sites do arquivo `base_busca.txt`
+#     para realizar a varredura em todos eles sequencialmente.
+#
+# 2.  **Histórico Persistente**: Mantém um registro completo de todos os links magnéticos
+#     já encontrados no arquivo `links-magnetic-download.txt`.
+#
+# 3.  **Detecção de Novidades**: Compara os links encontrados com o histórico para
+#     identificar e salvar apenas os que são genuinamente novos.
+#
+# 4.  **Varredura Profunda e Multi-thread**: Utiliza múltiplas threads para navegar
+#     pelas páginas internas de cada site, garantindo uma busca mais rápida e completa.
+#
+# 5.  **Categorização Automática**: Organiza os novos links em arquivos separados
+#     (ex: `links-filmes.txt`, `links-series.txt`) com base em palavras-chave.
 # ==============================================================================
 
 class CrawlerProfissional:

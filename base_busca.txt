@@ -1,6 +1,8 @@
 # Lista de sites para busca
 # Coloque um site por linha
 # Exemplo:
-https://www.starckfilmes-v2.com/
+https://primefilmes.org
+https://apachetorrent.com
+https://www.starckfilmes-v2.com
 https://redetorrent.com
 https://www.starckfilmes.fans

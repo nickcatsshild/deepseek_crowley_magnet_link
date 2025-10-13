@@ -25,9 +25,30 @@ logging.basicConfig(
 
 # ==============================================================================
 # CRAWLER PROFISSIONAL - VERSÃO UNIFICADA
+#
+# FUNCIONALIDADES PRINCIPAIS:
+#
+# 1.  **Busca em Múltiplos Sites**: Lê uma lista de sites do arquivo `base_busca.txt`
+#     para realizar a varredura em todos eles sequencialmente.
+#
+# 2.  **Histórico Persistente**: Mantém um registro completo de todos os links magnéticos
+#     já encontrados no arquivo `links-magnetic-download.txt`.
+#
+# 3.  **Detecção de Novidades**: Compara os links encontrados com o histórico para
+#     identificar e salvar apenas os que são genuinamente novos.
+#
+# 4.  **Varredura Profunda e Multi-thread**: Utiliza múltiplas threads para navegar
+#     pelas páginas internas de cada site, garantindo uma busca mais rápida e completa.
+#
+# 5.  **Categorização Automática**: Organiza os novos links em arquivos separados
+#     (ex: `links-filmes.txt`, `links-series.txt`) com base em palavras-chave.
 # ==============================================================================
 
 class CrawlerProfissional:
+    """
+    Classe principal que orquestra todo o processo de crawling.
+    Gerencia a lista de sites, o histórico de links e a geração de relatórios.
+    """
     def __init__(self, config):
         self.config = config
         self.arquivo_base = "base_busca.txt"
@@ -69,6 +90,9 @@ class CrawlerProfissional:
     def deve_ignorar_link(self, nome_link):
         """Verifica se o link deve ser ignorado com base em palavras-chave de baixa qualidade."""
         # Removemos a restrição de \b (palavra exata) para pegar variações como 'camrip'
+        # Palavras-chave que geralmente indicam baixa qualidade de vídeo/áudio.
+        # A verificação é feita em minúsculas para ser case-insensitive.
+        # Removemos a restrição de `\b` (fronteira de palavra) para capturar variações como 'camrip'.
         palavras_para_ignorar = ['cam', 'hdcam', 'ts', 'hdts', 'telesync', 'subbed']
         nome_lower = nome_link.lower()
         return any(palavra in nome_lower for palavra in palavras_para_ignorar)
@@ -88,6 +112,10 @@ class CrawlerProfissional:
 
     def processar_site(self, site_url):
         """Orquestra a varredura completa de um único site."""
+        """
+        Orquestra a varredura completa de um único site.
+        Cria uma instância de SiteScanner e inicia o processo de varredura.
+        """
         logging.info(f"{ '='*20} PROCESSANDO SITE: {site_url} { '='*20}")
         scanner = SiteScanner(site_url, self)
         novos_links_count, todos_links_site = scanner.iniciar_varredura()
@@ -111,6 +139,11 @@ class CrawlerProfissional:
 
     def executar_busca(self):
         """Executa a busca em todos os sites da lista."""
+        """
+        Método principal que executa a busca em todos os sites da lista.
+        Limpa arquivos antigos, processa cada site sequencialmente e, ao final,
+        chama a função para gerar os relatórios de categorias.
+        """
         logging.info("🚀 INICIANDO BUSCA PROFISSIONAL")
         if os.path.exists(self.arquivo_novos): os.remove(self.arquivo_novos)
         
@@ -150,12 +183,20 @@ class CrawlerProfissional:
     # --- CATEGORIZAÇÃO E RELATÓRIOS ---
 
     def extrair_nome_magnet(self, magnet_link):
+        """
+        Extrai o nome do arquivo (parâmetro 'dn') de um link magnético.
+        Decodifica o nome para lidar com caracteres especiais (ex: %20 para espaço).
+        """
         try:
             nome_match = re.search(r'dn=([^&]+)', magnet_link)
             return unquote(nome_match.group(1)) if nome_match else "Sem nome"
         except: return "Sem nome"
 
     def categorizar_link(self, magnet_link):
+        """
+        Categoriza um link magnético com base em palavras-chave encontradas em seu nome.
+        As categorias são focadas no tipo de áudio (Dual Audio, Dublado, Legendado).
+        """
         nome = self.extrair_nome_magnet(magnet_link).lower()
         if any(p in nome for p in ['dual audio', 'dual.audio', 'dual-audio']): return "Dual-Audio"
         if any(p in nome for p in ['dublado', 'dub', 'pt-br', 'pt br']): return "Dublado"
@@ -164,6 +205,11 @@ class CrawlerProfissional:
 
     def gerar_relatorio_categorias(self, links_para_categorizar):
         """Gera arquivos .txt para cada categoria, usando a lista de links fornecida."""
+        """
+        Gera arquivos .txt separados para cada categoria de áudio.
+        Utiliza a lista de links encontrados na execução atual para criar os relatórios,
+        incluindo um cabeçalho com informações úteis em cada arquivo.
+        """
         logging.info(f"Gerando relatórios para {len(links_para_categorizar)} links.")
         categorias = { "Dual-Audio": [], "Dublado": [], "Legendado": [], "Outros": [] }
         
@@ -186,6 +232,10 @@ class CrawlerProfissional:
 
 
 class SiteScanner:
+    """
+    Classe responsável por escanear um único site de forma profunda e multi-thread.
+    Gerencia a fila de URLs a visitar, o respeito ao `robots.txt` e a extração de links.
+    """
     def __init__(self, site_url, main_crawler):
         self.main_crawler = main_crawler
         self.config = main_crawler.config
@@ -210,11 +260,18 @@ class SiteScanner:
             logging.warning(f"⚠️ Não foi possível carregar robots.txt: {e}")
 
     def pode_rastrear(self, url):
+        """Verifica se a URL pode ser rastreada de acordo com as regras do `robots.txt` do site."""
         try: return self.robot_parser.can_fetch(self.main_crawler.session.headers['User-Agent'], url)
         except: return True
 
     def eh_url_valida(self, url):
         try:
+        """
+        Verifica se uma URL é válida para o crawling.
+        - Garante que a URL pertence ao mesmo domínio do site inicial.
+        - Ignora links que apontam para arquivos (zip, rar, pdf, etc.) para focar em páginas HTML.
+        """
+        try: # Envolve em try-except para lidar com URLs malformadas
             parsed = urlparse(url)
             if parsed.netloc != self.dominio_parseado.netloc: return False
             if any(url.lower().endswith(ext) for ext in ['.zip', '.rar', '.exe', '.pdf', '.jpg', '.png', '.css', '.js']): return False
@@ -223,6 +280,11 @@ class SiteScanner:
 
     def worker(self):
         """Thread de trabalho que processa URLs da fila até que self.running seja False."""
+        """
+        Função executada por cada thread. Pega uma URL da fila, baixa a página,
+        procura por links magnéticos e por novos links de páginas para adicionar à fila,
+        respeitando as regras de `robots.txt` e os delays configurados.
+        """
         while self.running:
             try:
                 url = self.urls_para_visitar.get(timeout=1)
@@ -278,6 +340,11 @@ class SiteScanner:
 
     def iniciar_varredura(self):
         """Inicia e gerencia as threads de varredura de forma robusta."""
+        """
+        Inicia e gerencia as threads de varredura para o site.
+        Cria as threads, aguarda a conclusão do processamento da fila de URLs
+        e lida com interrupções manuais (Ctrl+C) de forma segura.
+        """
         threads = [threading.Thread(target=self.worker, name=f"Worker-{i+1}", daemon=True) for i in range(self.config['max_threads'])]
         for t in threads: t.start()
 
@@ -299,6 +366,10 @@ class SiteScanner:
 
 
 def criar_arquivo_base_exemplo():
+    """
+    Cria o arquivo `base_busca.txt` com um exemplo se ele não existir.
+    Facilita o primeiro uso do script pelo usuário.
+    """
     if not os.path.exists("base_busca.txt"):
         with open("base_busca.txt", "w", encoding="utf-8") as f:
             f.write("# ======================================================\n")

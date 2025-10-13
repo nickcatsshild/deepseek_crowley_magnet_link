@@ -1,0 +1,9 @@
+2025-10-13 03:27:41,928 - INFO - [MainThread] - ============================================================
+2025-10-13 03:27:41,928 - INFO - [MainThread] - 🕵️ CRAWLER PROFISSIONAL
+2025-10-13 03:27:41,929 - INFO - [MainThread] - ⚙️  Configuração: 5 threads, 1s de delay por request.
+2025-10-13 03:27:41,929 - INFO - [MainThread] - ============================================================
+2025-10-13 03:27:41,961 - INFO - [MainThread] - 📚 Total de 5681 links únicos na base de dados histórica.
+2025-10-13 03:27:41,962 - INFO - [MainThread] - 🚀 INICIANDO BUSCA PROFISSIONAL
+2025-10-13 03:27:41,963 - INFO - [MainThread] - 🌐 5 sites carregados para a busca.
+2025-10-13 03:27:41,963 - INFO - [MainThread] - ==================== PROCESSANDO SITE: https://primefilmes.org ====================
+2025-10-13 03:27:42,194 - INFO - [MainThread] - 🤖 Robots.txt carregado com sucesso.
